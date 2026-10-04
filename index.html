@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="Dukaan AI — simple invoices and WhatsApp sales tools for small businesses.">
+<link rel="manifest" href="manifest.json">
+<title>Dukaan AI — Simple Sales Tool</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f5f7fb;color:#172033}
+header{background:#111827;color:white;padding:22px 18px}header h1{margin:0;font-size:25px}header p{margin:5px 0 0;color:#cbd5e1}
+main{max-width:1000px;margin:auto;padding:18px;display:grid;gap:16px}
+.card{background:white;border-radius:16px;padding:18px;box-shadow:0 5px 20px #0000000b;border:1px solid #edf0f5}
+h2{margin:0 0 14px;font-size:19px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+input,textarea,select,button{width:100%;padding:12px;border:1px solid #d7dce5;border-radius:10px;font:inherit}
+textarea{min-height:120px;resize:vertical}.full{grid-column:1/-1}
+button{background:#111827;color:white;border:0;cursor:pointer;font-weight:700}.green{background:#128c4b}.light{background:#eef2ff;color:#27346b}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid #eee}
+.price{font-weight:800}.muted{color:#64748b;font-size:14px}.total{font-size:22px;font-weight:800;text-align:right;margin-top:12px}
+.badge{display:inline-block;padding:5px 9px;background:#e8fff1;color:#08733b;border-radius:999px;font-size:12px;font-weight:700}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.row{flex-wrap:wrap}.row>*{min-width:120px}}
+</style>
+</head>
+<body>
+<header>
+<h1>🛍️ Dukaan AI</h1>
+<p>Sell faster. Make invoices. Share on WhatsApp.</p>
+</header>
+<main>
+<section class="card">
+<h2>1. Add Product</h2>
+<div class="grid">
+<input id="pname" placeholder="Product name">
+<input id="pprice" type="number" placeholder="Price (PKR)">
+<button onclick="addProduct()">Add Product</button>
+<button class="light" onclick="clearProducts()">Clear all</button>
+</div>
+<div id="products" style="margin-top:14px"></div>
+</section>
+
+<section class="card">
+<h2>2. Create Quick Invoice</h2>
+<div class="grid">
+<select id="productSelect"></select>
+<input id="qty" type="number" min="1" value="1" placeholder="Quantity">
+<button onclick="addToInvoice()">Add to invoice</button>
+<button class="light" onclick="clearInvoice()">New invoice</button>
+</div>
+<div id="invoice" style="margin-top:14px"></div>
+</section>
+
+<section class="card">
+<h2>3. Generate WhatsApp Sales Message</h2>
+<div class="grid">
+<input id="shop" placeholder="Shop name">
+<input id="customer" placeholder="Customer name">
+<input id="offer" class="full" placeholder="Offer, e.g. 10% discount today">
+<textarea id="msg" class="full" placeholder="Your sales message will appear here..."></textarea>
+<button onclick="generateMessage()">Generate message</button>
+<button class="green" onclick="sendWhatsApp()">Open WhatsApp</button>
+</div>
+</section>
+
+<section class="card">
+<h2>💰 How you can monetize it</h2>
+<p class="muted">Start free to get users. Then charge for premium features such as cloud backup, customer database, branded invoices, AI product descriptions and automated follow-ups.</p>
+<span class="badge">MVP ready</span>
+</section>
+</main>
+<script>
+let products=JSON.parse(localStorage.getItem('dukaan_products')||'[]');
+let invoice=[];
+function save(){localStorage.setItem('dukaan_products',JSON.stringify(products));}
+function money(n){return 'PKR '+Number(n).toLocaleString();}
+function render(){
+ const box=document.getElementById('products');
+ box.innerHTML=products.length?'<table><tr><th>Product</th><th>Price</th></tr>'+products.map((p,i)=>`<tr><td>${esc(p.name)}</td><td class="price">${money(p.price)}</td></tr>`).join('')+'</table>':'<p class="muted">No products yet.</p>';
+ const s=document.getElementById('productSelect');
+ s.innerHTML=products.length?products.map((p,i)=>`<option value="${i}">${esc(p.name)} — ${money(p.price)}</option>`).join(''):'<option>No products</option>';
+ renderInvoice();
+}
+function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function addProduct(){
+ const name=document.getElementById('pname').value.trim(), price=Number(document.getElementById('pprice').value);
+ if(!name||!price)return alert('Product name aur price enter karo.');
+ products.push({name,price});save();document.getElementById('pname').value='';document.getElementById('pprice').value='';render();
+}
+function clearProducts(){if(confirm('Delete all products?')){products=[];invoice=[];save();render();}}
+function addToInvoice(){
+ if(!products.length)return alert('Pehle product add karo.');
+ const p=products[Number(document.getElementById('productSelect').value)], q=Math.max(1,Number(document.getElementById('qty').value)||1);
+ invoice.push({name:p.name,price:p.price,qty:q});renderInvoice();
+}
+function clearInvoice(){invoice=[];renderInvoice();}
+function renderInvoice(){
+ const box=document.getElementById('invoice');
+ if(!invoice.length){box.innerHTML='<p class="muted">Invoice empty.</p>';return}
+ let total=invoice.reduce((a,x)=>a+x.price*x.qty,0); const discount=getDiscount(); const grand=Math.max(0,total-discount);
+ box.innerHTML='<table><tr><th>Item</th><th>Qty</th><th>Amount</th></tr>'+
+ invoice.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>${money(x.price*x.qty)}</td></tr>`).join('')+
+ '</table><div class="muted" style="text-align:right;margin-top:8px">Discount: '+money(discount)+'</div><div class="total">Total: '+money(grand)+'</div>';
+}
+function generateMessage(){
+ const shop=document.getElementById('shop').value.trim()||'Hamari shop';
+ const customer=document.getElementById('customer').value.trim()||'Customer';
+ const offer=document.getElementById('offer').value.trim()||'aaj special offer available hai';
+ let total=invoice.reduce((a,x)=>a+x.price*x.qty,0); const discount=getDiscount(); const grand=Math.max(0,total-discount);
+ document.getElementById('msg').value=`Assalam-o-Alaikum ${customer}! 👋\n\n${shop} par ${offer} 🎉\n${invoice.length?'Aapke selected items ka total '+money(total)+' hai. ':''}Order ya details ke liye reply karein. Shukriya!`;
+}
+function sendWhatsApp(){
+ const m=document.getElementById('msg').value.trim();
+ if(!m)return generateMessage();
+ location.href='https://wa.me/?text='+encodeURIComponent(m);
+}
+render();
+
+function getDiscount(){return Math.max(0,Number(document.getElementById('discount')?.value)||0);}
+function getGrandTotal(){return Math.max(0,invoice.reduce((a,x)=>a+x.price*x.qty,0)-getDiscount());}
+function printInvoice(){
+ if(!invoice.length)return alert('Invoice mein item add karo.');
+ const shop=document.getElementById('shop').value.trim()||'Dukaan AI Shop';
+ const rows=invoice.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>PKR ${(x.price*x.qty).toLocaleString()}</td></tr>`).join('');
+ const sub=invoice.reduce((a,x)=>a+x.price*x.qty,0), d=getDiscount(), total=Math.max(0,sub-d);
+ const w=window.open('','_blank');
+ w.document.write(`<html><head><title>Invoice</title><style>body{font-family:Arial;padding:25px;max-width:650px;margin:auto}table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:22px;font-weight:bold;margin-top:20px}</style></head><body><h1>${esc(shop)}</h1><p>Invoice • ${new Date().toLocaleString()}</p><table><tr><th>Item</th><th>Qty</th><th>Amount</th></tr>${rows}</table><p>Subtotal: PKR ${sub.toLocaleString()}</p><p>Discount: PKR ${d.toLocaleString()}</p><div class="total">Total: PKR ${total.toLocaleString()}</div><script>window.print()<\/script></body></html>`);
+ w.document.close();
+}
+async function shareInvoice(){
+ if(!invoice.length)return alert('Invoice mein item add karo.');
+ const total=getGrandTotal();
+ const text=`Invoice from ${document.getElementById('shop').value.trim()||'my shop'}\\nTotal: PKR ${total.toLocaleString()}\\nThank you!`;
+ if(navigator.share){try{await navigator.share({title:'Dukaan AI Invoice',text});}catch(e){}}
+ else {await navigator.clipboard?.writeText(text);alert('Invoice summary copied.');}
+}
+const oldGenerate=generateMessage;
+generateMessage=function(){
+ const shop=document.getElementById('shop').value.trim()||'Hamari shop';
+ const customer=document.getElementById('customer').value.trim()||'Customer';
+ const offer=document.getElementById('offer').value.trim()||'aaj special offer available hai';
+ const total=getGrandTotal();
+ document.getElementById('msg').value=`Assalam-o-Alaikum ${customer}! 👋\n\n${shop} par ${offer} 🎉\n${invoice.length?'Aapke selected items ka final total PKR '+total.toLocaleString()+' hai. ':''}Order ya details ke liye reply karein. Shukriya!`;
+}
+sendWhatsApp=function(){
+ const m=document.getElementById('msg').value.trim()||'Assalam-o-Alaikum! Dukaan AI se message.';
+ const phone=(document.getElementById('custPhone')?.value||'').replace(/\D/g,'');
+ location.href=phone?`https://wa.me/${phone}?text=${encodeURIComponent(m)}`:`https://wa.me/?text=${encodeURIComponent(m)}`;
+}
+
+</script>
+</body>
+</html>
