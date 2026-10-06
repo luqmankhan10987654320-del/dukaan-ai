@@ -68,8 +68,4 @@ function printInvoice(){if(!invoice.length)return alert('Invoice mein item add k
   let d=Math.max(0,+$('discount').value||0);
   let msg=`🧾 Dukaan AI Invoice\n\n${lines}\n\nDiscount: ${money(d)}\nTotal: ${money(total())}\n\nShukriya!`;
   location.href='https://wa.me/?text='+encodeURIComponent(msg);
-  }
-  function shareInvoice(){
-  ...
-}
-$('discount').addEventListener('input',renderInvoice);render();
+  }$('discount').addEventListener('input',renderInvoice);render();
