@@ -62,5 +62,18 @@ function renderCustomers(){$('customers').innerHTML=customers.length?'<table><tr
 function generateAd(){let s=$('shop').value.trim()||'Hamari Shop',p=$('campaignProduct').value.trim()||'special products',o=$('campaignOffer').value.trim()||'aaj special offer available hai',t=$('tone').value;$('ad').value=`${t==='Urgent sale'?'🔥 LAST CHANCE!':t==='Professional'?'Dear customer,':'Assalam-o-Alaikum! 👋'}\n\n${s} mein ${p} par ${o}. 🎉\n\nOrder karne ke liye isi WhatsApp par reply karein. Shukriya!`}
 function sendAd(){let m=$('ad').value.trim();if(!m){generateAd();m=$('ad').value.trim()}location.href='https://wa.me/?text='+encodeURIComponent(m)}
 function printInvoice(){if(!invoice.length)return alert('Invoice mein item add karo.');let rows=invoice.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>${money(x.price*x.qty)}</td></tr>`).join(''),w=open('','_blank');w.document.write(`<html><body style="font-family:Arial;padding:25px;max-width:650px;margin:auto"><h1>${esc($('shop').value.trim()||'Dukaan AI Shop')}</h1><p>${new Date().toLocaleString()}</p><table style="width:100%;border-collapse:collapse">${rows}</table><h2 style="text-align:right">Total: ${money(total())}</h2><script>window.print()<\/script></body></html>`);w.document.close()}
+  function shareInvoice(){
+  if(!invoice.length)return alert('Invoice mein item add karo.');
+  let lines=invoice.map(x=>`${x.name} x${x.qty} = ${money(x.price*x.qty)}`).join('\n');
+  let d=Math.max(0,+$('discount').value||0);
+  let msg=`🧾 Dukaan AI Invoice\n\n${lines}\n\nDiscount: ${money(d)}\nTotal: ${money(total())}\n\nShukriya!`;
+  location.href='https://wa.me/?text='+encodeURIComponent(msg);
+  }
+  if(!invoice.length)return alert('Invoice mein item add karo.');
+  let lines=invoice.map(x=>`${x.name} x${x.qty} = ${money(x.price*x.qty)}`).join('\n');
+  let d=Math.max(0,+$('discount').value||0);
+  let msg=`🧾 Dukaan AI Invoice\n\n${lines}\n\nDiscount: ${money(d)}\nTotal: ${money(total())}\n\nShukriya!`;
+  location.href='https://wa.me/?text='+encodeURIComponent(msg);
+  }
 $('discount').addEventListener('input',renderInvoice);render();
 </script></body></html>
