@@ -23,6 +23,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;bord
 <select id="productSelect"></select><input id="qty" type="number" min="1" value="1">
 <button onclick="addToInvoice()">Add to invoice</button><button class="light" onclick="clearInvoice()">New invoice</button>
 <input id="discount" type="number" min="0" value="0" placeholder="Discount PKR"><button onclick="printInvoice()">🖨️ Print / Save PDF</button>
+  <button class="green" onclick="shareInvoice()">📲 Share Invoice on WhatsApp</button>
 </div><div id="invoice"></div></section>
 
 <section class="card"><h2>👥 Customers</h2><div class="grid">
